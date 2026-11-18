@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b62b8">
+<title>Livellazioni Dighe</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* App da campo: tema chiaro ad alto contrasto (leggibile al sole), comandi grandi, una mano */
+:root{
+  --bg:#eef2f6; --card:#ffffff; --ink:#0d1620; --muted:#4f5d6b; --line:#cdd6df;
+  --accent:#0b62b8; --accent-ink:#ffffff; --accent-soft:#dfeafa;
+  --ok:#17703f; --ok-soft:#dcf1e4; --warn:#9a5600; --warn-soft:#fbecd2; --bad:#b0221a; --bad-soft:#fadfdc;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"Roboto Mono","SF Mono",Consolas,monospace;
+  --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.4;overscroll-behavior-y:contain}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-height:46px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+
+/* barra superiore */
+.appbar{position:sticky;top:0;z-index:20;background:var(--accent);color:#fff;padding:calc(10px + var(--safe-top)) 12px 10px;display:flex;align-items:center;gap:10px;min-height:56px}
+.appbar h1{font-size:18px;margin:0;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.appbar .sub{font-size:12px;opacity:.85;font-weight:500}
+.iconbtn{border:0;background:rgba(255,255,255,.14);color:#fff;width:42px;height:42px;border-radius:10px;font-size:20px;display:grid;place-items:center;cursor:pointer;flex:none}
+.chip{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;flex:none}
+
+main{padding:14px 12px calc(96px + var(--safe-bot));max-width:760px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lbl{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;display:block}
+.muted{color:var(--muted);font-size:14px}
+h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.btn{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;min-height:50px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--bad);border-color:var(--bad-soft)}
+.btn.block{width:100%}
+.btn.sm{min-height:38px;padding:7px 12px;font-size:14px;border-radius:10px}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--line)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.cs{background:var(--accent-soft);color:var(--accent)}
+
+/* home */
+.dam{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:14px;cursor:pointer}
+.dam b{font-size:17px}
+.dam .go{margin-left:auto;font-size:22px;color:var(--accent)}
+.dam[disabled]{opacity:.55;cursor:default}
+.bar{height:6px;background:var(--line);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+
+/* passo-passo */
+.prog{display:flex;gap:3px;margin-bottom:10px}
+.prog i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.prog i.done{background:var(--ok)} .prog i.cur{background:var(--accent)}
+.mini{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;border:1.5px solid var(--line);background-color:#fff;background-repeat:no-repeat;overflow:hidden}
+.mini .mk{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:4px solid var(--accent);background:rgba(11,98,184,.15);box-shadow:0 0 0 6px rgba(11,98,184,.18);animation:pulse 1.6s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(11,98,184,.45)}100%{box-shadow:0 0 0 18px rgba(11,98,184,0)}}
+@media (prefers-reduced-motion:reduce){.mini .mk{animation:none}}
+.mini .zt{position:absolute;right:8px;bottom:8px}
+.stepname{font-size:34px;font-weight:800;line-height:1.1;margin:4px 0 2px;letter-spacing:-.01em}
+.steptype{font-size:14px;color:var(--muted);font-weight:600}
+.bigin{font-family:var(--mono);font-size:30px;font-weight:700;text-align:center;min-height:68px;border-width:2px;letter-spacing:.02em}
+.info{display:flex;justify-content:space-between;gap:10px;font-size:15px;padding:10px 12px;border-radius:10px;background:var(--bg)}
+.info b{font-family:var(--mono)}
+.big-out{font-family:var(--mono);font-size:34px;font-weight:800;text-align:center;padding:8px 0}
+.navbtns{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.sumrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;cursor:pointer}
+.sumrow:last-child{border-bottom:0}
+.sumrow .q{font-family:var(--mono);font-weight:600}
+
+/* planimetria */
+.mapscroll{overflow:auto;border-radius:12px;border:1.5px solid var(--line);background:#fff;-webkit-overflow-scrolling:touch}
+.map{position:relative;width:900px}
+.map img{display:block;width:100%;height:auto;max-width:none}
+.leaders{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.leaders line{stroke:#8a96a3;stroke-width:1.5;stroke-dasharray:4 3;vector-effect:non-scaling-stroke}
+.leaders line.filled{stroke:var(--ok)}.leaders line.cs{stroke:var(--accent)}.leaders line.alert{stroke:var(--bad)}
+.pt{position:absolute;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;border:3.5px solid #8a96a3;background:rgba(255,255,255,.7);padding:0;cursor:pointer}
+.pt.filled{border-color:var(--ok);background:rgba(23,112,63,.25)} .pt.cs{border-color:var(--accent);background:rgba(11,98,184,.2)} .pt.alert{border-color:var(--bad);background:rgba(176,34,26,.25)}
+.box{position:absolute;z-index:2;transform:translate(-50%,-50%);width:132px;background:#fff;border:2px solid #8a96a3;border-radius:8px;padding:4px 6px 5px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.box.filled{border-color:var(--ok)}.box.cs{border-color:var(--accent)}.box.alert{border-color:var(--bad)}
+.box .hd{font-size:12px;font-weight:800;margin-bottom:3px}
+.box input{min-height:34px;padding:4px 6px;font-size:14px;font-family:var(--mono);border-radius:6px}
+.box .d{font-family:var(--mono);font-size:11px;color:var(--muted);min-height:14px;margin-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted);margin-bottom:8px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:12px;height:12px;border-radius:50%;border:2.5px solid}
+
+/* foglio */
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+td input{min-height:42px;font-family:var(--mono);padding:6px 8px}
+td.r,th.r{text-align:right}
+tr.cs td{background:var(--accent-soft)}
+
+/* barra inferiore */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:4px 4px calc(4px + var(--safe-bot))}
+.tabbar button{border:0;background:none;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;border-radius:10px;min-height:56px}
+.tabbar button svg{width:24px;height:24px}
+.tabbar button[aria-current="page"]{color:var(--accent);background:var(--accent-soft)}
+
+
+/* storico */
+.tile{padding:12px}
+.tile .lbl{margin-bottom:2px}
+.tv{font-family:var(--mono);font-size:20px;font-weight:800;line-height:1.2}
+.bars{display:flex;flex-direction:column;gap:2px}
+.barrow{display:grid;grid-template-columns:86px 1fr 58px;gap:8px;align-items:center;border:0;background:none;padding:5px 2px;cursor:pointer;text-align:left;border-radius:8px}
+.barrow:hover{background:var(--bg)}
+.bn{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bv{font-family:var(--mono);font-size:13px;font-weight:700;text-align:right}
+.btrack{position:relative;height:18px;background:var(--bg);border-radius:4px;overflow:hidden}
+.btrack .bs{position:absolute;top:0;bottom:0;background:var(--ok-soft)}
+.btrack .b0{position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:var(--muted)}
+.btrack .bf{position:absolute;top:3px;bottom:3px;border-radius:3px}
+.bf.ok{background:var(--ok)}.bf.warn{background:var(--warn)}.bf.bad{background:var(--bad)}
+.seg{display:flex;gap:4px;background:var(--bg);border-radius:10px;padding:3px;margin-bottom:10px}
+.seg button{flex:1;border:0;background:none;border-radius:8px;padding:8px 4px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.tscroll{overflow-x:auto;margin:0 -6px}
+table.hist{font-size:13px;white-space:nowrap}
+table.hist th,table.hist td{padding:7px 8px}
+table.hist .stick{position:sticky;left:0;background:#fff;z-index:1;box-shadow:1px 0 0 var(--line)}
+table.hist tr.cs .stick{background:var(--accent-soft)}
+table.hist tr[data-p]{cursor:pointer}
+.cell{font-family:var(--mono);font-weight:700;padding:2px 6px;border-radius:6px}
+.cell.ok{background:var(--ok-soft);color:var(--ok)}.cell.warn{background:var(--warn-soft);color:var(--warn)}.cell.bad{background:var(--bad-soft);color:var(--bad)}
+.chart{width:100%;height:auto;display:block}
+.filt{margin-bottom:12px}
+tr.pp td{background:#f7f9fb}
+tr.pp b{font-weight:600;color:var(--muted)}
+dialog{border:0;border-radius:16px;padding:18px;max-width:420px;width:calc(100% - 32px)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+dialog h3{margin:0 0 6px;font-size:19px}
+.dlgact{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.toast{position:fixed;left:50%;bottom:calc(84px + var(--safe-bot));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <button class="iconbtn" id="back" aria-label="Torna all'elenco dighe" hidden>←</button>
+  <div style="flex:1;min-width:0">
+    <h1 id="title">Livellazioni Dighe</h1>
+    <div class="sub" id="subtitle">Monitoraggio con Leica LS15</div>
+  </div>
+  <button class="chip" id="campchip" hidden></button>
+</header>
+
+<main id="main"></main>
+
+<nav class="tabbar" id="tabbar" hidden aria-label="Sezioni">
+  <button data-tab="campo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16M7 20l5-14 5 14M9.5 13h5"/></svg>Campagna</button>
+  <button data-tab="mappa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>Mappa</button>
+  <button data-tab="foglio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Foglio</button>
+  <button data-tab="storico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 3 3 6-7"/></svg>Storico</button>
+  <button data-tab="archivio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18v13H3zM3 7l2-3h14l2 3M9 12h6"/></svg>Archivio</button>
+</nav>
+
+<dialog id="dlg"><h3 id="dlg-t"></h3><div id="dlg-b" class="muted"></div><div class="dlgact"><button class="btn sm" id="dlg-no">Annulla</button><button class="btn sm primary" id="dlg-yes">Conferma</button></div></dialog>
+<input type="file" id="filein" accept="application/json,.json" hidden>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const KEY="livapp-v1", KEYDATI="livapp-dati";
+let DIGHE=[];
+
+// ---------------- dati ----------------
+let S={campagne:{},zero:{},corrente:{},passo:{},settings:{tol:1.0,soglia:2.0}};
+try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.campagne) S=Object.assign(S,s); }catch(e){}
+let saveT=null;
+function save(){ clearTimeout(saveT); saveT=setTimeout(()=>{ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){ toast("Memoria del telefono piena: esporta un backup"); } },250); }
+function saveNow(){ clearTimeout(saveT); try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+window.addEventListener("pagehide",saveNow);
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) saveNow(); });
+if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+const nowHM=()=>{const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");};
+const fmtDate=s=>{ if(!s) return "—"; const [y,m,d]=s.split("-"); return d+"/"+m+"/"+y; };
+function parseQ(v){ if(v==null) return null; const s=String(v).trim().replace(",","."); if(s==="") return null; const n=Number(s); return isFinite(n)?n:NaN; }
+function fmtQ(n,d){ return n==null||isNaN(n)?"—":n.toFixed(d==null?4:d).replace(".",","); }
+function fmtMM(n){ if(n==null||isNaN(n)) return "—"; if(Math.abs(n)<0.05) return "0,0"; return ((n>0?"+":"")+n.toFixed(1)).replace(".",","); }
+
+function diga(id){ return DIGHE.find(d=>d.id===id); }
+function campOf(dId){ return Object.values(S.campagne).filter(c=>c.diga===dId).sort((a,b)=>(b.data||"").localeCompare(a.data||"")||(b.creata||0)-(a.creata||0)); }
+function newCamp(dId, from){
+  const id=dId+"-"+Date.now().toString(36);
+  const c={id,diga:dId,data:today(),operatore:from?from.operatore:"",strumento:from?from.strumento:"Leica LS15",metodo:from?from.metodo:"aBFFB",meteo:"",invaso:"",misure:{},creata:Date.now()};
+  S.campagne[id]=c; S.corrente[dId]=id; S.passo[id]=0; save(); return c;
+}
+function cur(dId){ let id=S.corrente[dId]; if(!id||!S.campagne[id]){ const l=campOf(dId); if(l.length){ id=l[0].id; S.corrente[dId]=id; } else return newCamp(dId); } return S.campagne[id]; }
+
+// punti misurabili + logica
+function hasPP(d){ return d.punti.some(p=>p.tipo==="pp"); }
+function visPts(d){ return hasPP(d)&&S.settings.soloPrinc!==false?d.punti.filter(p=>p.tipo!=="pp"):d.punti; }
+function filtroHTML(d){ if(!hasPP(d)) return ""; const np=d.punti.filter(p=>p.tipo!=="pp").length; const on=S.settings.soloPrinc!==false;
+  return '<div class="seg filt"><button data-f="1" aria-pressed="'+on+'">Punti principali ('+np+')</button><button data-f="0" aria-pressed="'+(!on)+'">Tutti, con passaggio ('+d.punti.length+')</button></div>'; }
+function bindFiltro(){ main.querySelectorAll(".filt button").forEach(b=>b.addEventListener("click",()=>{ S.settings.soloPrinc=b.dataset.f==="1"; save(); const y=window.scrollY; render(); window.scrollTo(0,y); })); }
+function allPts(d){ return (d.csXY?[{id:d.caposaldo.id,tipo:"cs",x:d.csXY.x,y:d.csXY.y,bx:d.csXY.bx,by:d.csXY.by,nota:d.caposaldo.nota}]:[]).concat(d.punti.filter(p=>p.x!=null)); }
+function stato(d,c,pid){
+  if(pid===d.caposaldo.id) return {cls:"cs",q:d.caposaldo.quota};
+  const m=c.misure[pid]; const q=m?parseQ(m.q):null;
+  if(q==null) return {cls:"",q:null};
+  if(isNaN(q)||Math.abs(q-d.caposaldo.quota)>25) return {cls:"alert",q,msg:"Valore da controllare"};
+  const z=S.zero[d.id]; let delta=null, zq=null;
+  if(z&&z.campagnaId!==c.id&&z.quote&&z.quote[pid]!=null){ zq=z.quote[pid]; delta=(q-zq)*1000; }
+  return {cls:"filled",q,delta,zq};
+}
+const dCls=x=>{ if(x==null) return ""; const a=Math.abs(x),s=S.settings.soglia; return a<=s?"ok":a<=2*s?"warn":"bad"; };
+function setQ(c,pid,raw){ const m=c.misure[pid]||(c.misure[pid]={q:"",note:"",ora:""}); m.q=String(raw).trim(); if(m.q&&!m.ora) m.ora=nowHM(); if(!m.q) m.ora=""; save(); }
+function setNote(c,pid,v){ const m=c.misure[pid]||(c.misure[pid]={q:"",note:"",ora:""}); m.note=v; save(); }
+function done(d,c){ return d.punti.filter(p=>{ const q=parseQ((c.misure[p.id]||{}).q); return q!=null&&!isNaN(q); }).length; }
+function chiusura(d,c){ const q=parseQ((c.misure["__chiusura"]||{}).q); if(q==null||isNaN(q)) return null; return (q-d.caposaldo.quota)*1000; }
+
+// ---------------- navigazione ----------------
+let route={view:"home"};
+function go(r,replace){ route=r; const h=r.view==="home"?"#":"#"+r.diga+"/"+r.tab; try{ if(replace) history.replaceState(r,"",h); else history.pushState(r,"",h); }catch(e){} render(); }
+window.addEventListener("popstate",e=>{ route=e.state||parseHash(); render(); });
+function parseHash(){ const h=location.hash.slice(1).split("/"); if(h[0]&&diga(h[0])&&diga(h[0]).attiva) return {view:"diga",diga:h[0],tab:["campo","mappa","foglio","storico","archivio"].includes(h[1])?h[1]:"campo"}; return {view:"home"}; }
+$("#back").addEventListener("click",()=>{ if(history.state&&history.state.view==="diga"&&history.length>1) history.back(); else go({view:"home"}); });
+document.querySelectorAll(".tabbar button").forEach(b=>b.addEventListener("click",()=>{ stoPunto=null; go({view:"diga",diga:route.diga,tab:b.dataset.tab},true); }));
+$("#campchip").addEventListener("click",()=>go({view:"diga",diga:route.diga,tab:"archivio"},true));
+
+// ---------------- render ----------------
+const main=$("#main");
+function render(){
+  saveNow();
+  if(!DIGHE.length){ showLock(""); return; }
+  if(route.view==="home") return renderHome();
+  const d=diga(route.diga); const c=cur(d.id);
+  $("#back").hidden=false; $("#tabbar").hidden=false; $("#campchip").hidden=false;
+  $("#title").textContent=d.nome; $("#subtitle").textContent="Caposaldo "+d.caposaldo.id+" = "+fmtQ(d.caposaldo.quota,3)+" m";
+  $("#campchip").textContent=fmtDate(c.data)+(S.zero[d.id]&&S.zero[d.id].campagnaId===c.id?" · zero":"");
+  document.querySelectorAll(".tabbar button").forEach(b=>{ if(b.dataset.tab===route.tab) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  if(route.tab!=="storico") stoPunto=null;
+  ({campo:renderCampo,mappa:renderMappa,foglio:renderFoglio,storico:renderStorico,archivio:renderArchivio})[route.tab](d,c);
+  window.scrollTo(0,0);
+}
+
+// HOME
+let installEvt=null;
+window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); installEvt=e; if(route.view==="home"&&DIGHE.length) renderHome(); });
+function renderHome(){
+  $("#back").hidden=true; $("#tabbar").hidden=true; $("#campchip").hidden=true;
+  $("#title").textContent="Livellazioni Dighe"; $("#subtitle").textContent="Monitoraggio con Leica LS15";
+  let h='<div class="stack">';
+  if(installEvt) h+='<button class="btn primary block" id="inst">Installa l\'app sul telefono</button>';
+  h+='<h2 style="margin-top:4px">Dighe</h2>';
+  DIGHE.forEach(d=>{
+    if(!d.attiva){ h+='<button class="dam" disabled><div><b>'+esc(d.nome)+'</b><div class="muted">Caposaldo '+esc(d.caposaldo.id)+' = '+fmtQ(d.caposaldo.quota,3)+' m · in preparazione</div></div></button>'; return; }
+    const l=campOf(d.id); const c=l[0]; const n=c?done(d,c):0;
+    h+='<button class="dam" data-d="'+d.id+'"><div style="flex:1;min-width:0"><b>'+esc(d.nome)+'</b><div class="muted">'+(c?'Ultima campagna '+fmtDate(c.data)+' · '+n+'/'+d.punti.length+' punti':'Nessuna campagna')+'</div>'+
+      (c?'<div class="bar" style="margin-top:8px"><i style="width:'+(n/d.punti.length*100)+'%"></i></div>':'')+'</div><span class="go">›</span></button>';
+  });
+  h+='<h2 style="margin-top:12px">Backup dei dati</h2><div class="card stack"><div class="muted">Le misure sono salvate solo su questo telefono. Esporta un backup a fine giornata e conservalo sul PC.</div>'+
+     '<div class="grid2"><button class="btn" id="bk-exp">Esporta backup</button><button class="btn" id="bk-imp">Importa backup</button></div></div><button class="btn block" id="lock">Blocca l\'app (chiederà di nuovo la password)</button><div class="muted" style="text-align:center;font-size:12px">Versione 5 · dati del '+esc(DATI_VER.split("-")[0])+'</div></div>';
+  main.innerHTML=h;
+  main.querySelectorAll(".dam[data-d]").forEach(b=>b.addEventListener("click",()=>go({view:"diga",diga:b.dataset.d,tab:"campo"})));
+  const ib=$("#inst"); if(ib) ib.addEventListener("click",async()=>{ installEvt.prompt(); try{ await installEvt.userChoice; }catch(e){} installEvt=null; renderHome(); });
+  $("#bk-exp").addEventListener("click",exportBackup);
+  $("#bk-imp").addEventListener("click",()=>$("#filein").click());
+  $("#lock").addEventListener("click",()=>ask("Bloccare l'app?","Planimetrie e quote dei capisaldi vengono tolte dal telefono: per riaprirle servirà la password. Le misure delle campagne restano salvate.",()=>{ try{ localStorage.removeItem(KEYDATI); }catch(e){} DIGHE=[]; showLock(""); }));
+}
+
+// CAMPAGNA PASSO-PASSO
+function steps(d){ return [{k:"inizio"},{k:"cs"}].concat(d.punti.map(p=>({k:"pt",p})),[{k:"chiusura"},{k:"fine"}]); }
+function renderCampo(d,c){
+  const st=steps(d); let i=Math.min(S.passo[c.id]||0,st.length-1); S.passo[c.id]=i; const s=st[i];
+  let prog='<div class="prog" aria-hidden="true">'+st.map((x,j)=>{ let cl=j===i?"cur":""; if(x.k==="pt"){ const q=parseQ((c.misure[x.p.id]||{}).q); if(q!=null&&!isNaN(q)&&j!==i) cl="done"; } else if(j<i) cl="done"; return '<i class="'+cl+'"></i>'; }).join("")+'</div>';
+  let h='<div class="stack">'+prog+'<div class="muted" style="margin-top:-6px">Passo '+(i+1)+' di '+st.length+'</div>';
+  const mini=(x,y)=>'<div class="mini" id="mini" data-x="'+(x==null?'':x)+'" data-y="'+(y==null?'':y)+'"><div class="mk"></div><button class="btn sm zt" id="tomap">Apri mappa</button></div>';
+  const csx=d.csXY?d.csXY.x:null, csy=d.csXY?d.csXY.y:null;
+  if(s.k==="inizio"){
+    h+='<div><div class="stepname" style="font-size:28px">Inizio campagna</div><div class="steptype">Dati generali e livello dell\'invaso</div></div>'+
+      '<div class="card stack">'+
+      '<div class="grid2"><div><label class="lbl" for="f-data">Data</label><input id="f-data" type="date" value="'+esc(c.data)+'"></div>'+
+      '<div><label class="lbl" for="f-metodo">Metodo</label><select id="f-metodo">'+["aBFFB","BFFB","BF","aBF","BBFF"].map(m=>'<option'+(m===c.metodo?" selected":"")+'>'+m+'</option>').join("")+'</select></div></div>'+
+      '<div><label class="lbl" for="f-oper">Operatore</label><input id="f-oper" value="'+esc(c.operatore)+'" placeholder="Nome e cognome" autocomplete="name"></div>'+
+      '<div class="grid2"><div><label class="lbl" for="f-strum">Strumento</label><input id="f-strum" value="'+esc(c.strumento)+'"></div>'+
+      '<div><label class="lbl" for="f-meteo">Meteo / T</label><input id="f-meteo" value="'+esc(c.meteo)+'" placeholder="Sereno, 12 °C"></div></div>'+
+      '<div><label class="lbl" for="f-invaso">Livello invaso (m s.l.m.)</label><input id="f-invaso" class="num" inputmode="decimal" value="'+esc(c.invaso)+'" placeholder="Lettura idrometro"></div>'+
+      '</div>';
+  } else if(s.k==="cs"){
+    h+=mini(csx,csy)+'<div><div class="stepname">'+esc(d.caposaldo.id)+'</div><div class="steptype">Caposaldo di partenza'+(d.caposaldo.nota?' · '+esc(d.caposaldo.nota):'')+'</div></div>'+
+      '<div class="card stack"><div class="big-out">'+fmtQ(d.caposaldo.quota,3)+' m</div>'+
+      '<div class="muted">Sulla LS15 apri il lavoro della diga, in LineaLiv. imposta come punto iniziale <b>'+esc(d.caposaldo.id)+'</b> (la quota si compila da sola) e misura il primo punto indietro.</div></div>';
+  } else if(s.k==="pt"){
+    const p=s.p, m=c.misure[p.id]||{}, sx=stato(d,c,p.id);
+    let mp=p, verso="";
+    if(p.x==null){ const k=d.punti.indexOf(p); mp=d.punti.slice(k+1).find(q=>q.x!=null)||d.punti.slice(0,k).reverse().find(q=>q.x!=null)||{x:null,y:null}; if(mp.id) verso=' · verso '+esc(mp.id); }
+    h+=mini(mp.x,mp.y)+'<div><div class="stepname">'+esc(p.id)+'</div><div class="steptype">'+(p.tipo==="pp"?esc(p.nota||"Punto di passaggio")+verso:(p.tipo==="cs2"?"Caposaldo":"Punto di livellazione")+(p.nota?' · '+esc(p.nota):''))+'</div></div>'+
+      '<div class="card stack"><label class="lbl" for="f-q" style="margin:0">Quota misurata (m)</label>'+
+      '<input id="f-q" class="bigin" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="000,00000" value="'+esc(m.q||"")+'">'+
+      '<div id="f-q-info"></div>'+
+      '<div><label class="lbl" for="f-note">Note</label><input id="f-note" value="'+esc(m.note||"")+'" placeholder="Es. chiodo danneggiato, vento" enterkeyhint="done"></div></div>';
+  } else if(s.k==="chiusura"){
+    const m=c.misure["__chiusura"]||{};
+    h+=mini(csx,csy)+'<div><div class="stepname">Chiusura</div><div class="steptype">Ritorno sul caposaldo '+esc(d.caposaldo.id)+' ('+fmtQ(d.caposaldo.quota,3)+' m)</div></div>'+
+      '<div class="card stack"><label class="lbl" for="f-q" style="margin:0">Quota di arrivo su '+esc(d.caposaldo.id)+' (m)</label>'+
+      '<input id="f-q" class="bigin" type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="000,00000" value="'+esc(m.q||"")+'">'+
+      '<div id="f-q-info"></div>'+
+      '<div class="grid2"><div><label class="lbl" for="f-tol">Tolleranza (mm)</label><input id="f-tol" class="num" inputmode="decimal" value="'+String(S.settings.tol).replace(".",",")+'"></div><div></div></div></div>';
+  } else {
+    const n=done(d,c), e=chiusura(d,c);
+    h+='<div><div class="stepname" style="font-size:28px">Riepilogo</div><div class="steptype">'+fmtDate(c.data)+' · '+n+' di '+d.punti.length+' punti misurati</div></div>'+
+      '<div class="card"><div class="info"><span>Errore di chiusura</span>'+(e==null?'<b>—</b>':'<span><b>'+fmtMM(e)+' mm</b> <span class="pill '+(Math.abs(e)<=S.settings.tol?"ok":"bad")+'">'+(Math.abs(e)<=S.settings.tol?"In tolleranza":"Fuori tolleranza")+'</span></span>')+'</div></div>'+
+      '<div class="card" style="padding:4px 12px">'+d.punti.map((p,j)=>{ const sx=stato(d,c,p.id); const pill=sx.cls==="alert"?'<span class="pill bad">Controlla</span>':sx.q==null?'<span class="pill">Mancante</span>':sx.delta!=null?'<span class="pill '+dCls(sx.delta)+'">'+fmtMM(sx.delta)+' mm</span>':'<span class="pill ok">OK</span>';
+        return '<button class="sumrow" data-j="'+(j+2)+'"><b>'+esc(p.id)+'</b><span class="q">'+fmtQ(sx.q)+'</span>'+pill+'</button>'; }).join("")+'</div>'+
+      '<div class="grid2"><button class="btn primary" id="csv">Condividi CSV</button><button class="btn" id="csv2">Salva CSV</button></div>';
+  }
+  h+='<div class="navbtns"><button class="btn" id="prev"'+(i===0?" disabled":"")+'>‹ Indietro</button><button class="btn primary" id="next">'+(i===st.length-1?"Torna all'inizio":i===st.length-2?"Riepilogo ›":"Avanti ›")+'</button></div></div>';
+  main.innerHTML=h;
+
+  // mini mappa
+  const mn=$("#mini"); if(mn) setMini(mn,d);
+  const tm=$("#tomap"); if(tm) tm.addEventListener("click",()=>go({view:"diga",diga:d.id,tab:"mappa"},true));
+  const stepTo=j=>{ S.passo[c.id]=Math.max(0,Math.min(st.length-1,j)); save(); render(); };
+  $("#prev").addEventListener("click",()=>stepTo(i-1));
+  $("#next").addEventListener("click",()=>stepTo(i===st.length-1?0:i+1));
+  main.querySelectorAll(".sumrow").forEach(b=>b.addEventListener("click",()=>stepTo(+b.dataset.j)));
+
+  if(s.k==="inizio"){
+    [["f-data","data"],["f-metodo","metodo"],["f-oper","operatore"],["f-strum","strumento"],["f-meteo","meteo"],["f-invaso","invaso"]].forEach(([id,k])=>{
+      const el=document.getElementById(id); el.addEventListener("input",()=>{ c[k]=el.value; save(); if(k==="data") $("#campchip").textContent=fmtDate(c.data); }); });
+  }
+  if(s.k==="pt"||s.k==="chiusura"){
+    const pid=s.k==="pt"?s.p.id:"__chiusura"; const qi=$("#f-q");
+    const upd=()=>{ const box=$("#f-q-info"); let t="";
+      if(s.k==="pt"){ const sx=stato(d,c,pid);
+        if(sx.cls==="alert") t='<div class="info" style="background:var(--bad-soft);color:var(--bad)"><span>Valore fuori scala</span><b>Ricontrolla</b></div>';
+        else if(sx.zq!=null) t='<div class="info"><span>Zero '+fmtDate(S.zero[d.id].data)+': <b>'+fmtQ(sx.zq)+'</b></span>'+(sx.delta!=null?'<span class="pill '+dCls(sx.delta)+'">'+fmtMM(sx.delta)+' mm</span>':'')+'</div>';
+        else if(S.zero[d.id]&&S.zero[d.id].campagnaId===c.id) t='<div class="muted">Questa campagna è la misura di zero.</div>';
+        else t='<div class="muted">Nessuna misura di zero: gli spostamenti compariranno dalle prossime campagne.</div>';
+        const prev=campsChrono(d.id).filter(k=>k.id!==c.id&&(k.data<c.data||(k.data===c.data&&(k.creata||0)<(c.creata||0)))&&qOf(k,pid)!=null).pop();
+        if(prev){ const pq=qOf(prev,pid), dp=sx.q!=null&&sx.cls!=="alert"?(sx.q-pq)*1000:null; t+='<div class="info" style="margin-top:6px"><span>Precedente '+fmtDate(prev.data)+': <b>'+fmtQ(pq)+'</b></span>'+(dp!=null?'<span class="pill '+dCls(dp)+'">'+fmtMM(dp)+' mm</span>':'')+'</div>'; }
+      } else { const e=chiusura(d,c); t=e==null?'<div class="muted">Inserisci la quota letta sul caposaldo a fine linea.</div>':'<div class="info"><span>Errore di chiusura <b>'+fmtMM(e)+' mm</b></span><span class="pill '+(Math.abs(e)<=S.settings.tol?"ok":"bad")+'">'+(Math.abs(e)<=S.settings.tol?"In tolleranza":"Fuori tolleranza")+'</span></div>'; }
+      box.innerHTML=t; };
+    upd();
+    qi.addEventListener("input",()=>{ setQ(c,pid,qi.value); upd(); });
+    qi.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); stepTo(i+1); } });
+    const ni=$("#f-note"); if(ni) ni.addEventListener("input",()=>setNote(c,pid,ni.value));
+    const ti=$("#f-tol"); if(ti) ti.addEventListener("change",()=>{ const v=parseQ(ti.value); if(v>0){ S.settings.tol=v; save(); upd(); } else ti.value=String(S.settings.tol).replace(".",","); });
+    if(!qi.value) setTimeout(()=>qi.focus(),150);
+  }
+  if(s.k==="fine"){ $("#csv").addEventListener("click",()=>shareCSV(d,c)); $("#csv2").addEventListener("click",()=>downloadCSV(d,c)); }
+}
+function setMini(el,d){
+  const W=el.clientWidth, H=el.clientHeight; const mk=el.querySelector(".mk");
+  el.style.backgroundImage='url("'+d.img+'")';
+  if(el.dataset.x===""){ el.style.backgroundSize="contain"; el.style.backgroundPosition="center"; mk.hidden=true; return; }
+  const x=+el.dataset.x/100, y=+el.dataset.y/100, Z=2.6;
+  const iw=W*Z, ih=iw/d.imgRatio;
+  let ox=W/2-x*iw, oy=H/2-y*ih;
+  ox=Math.min(0,Math.max(W-iw,ox)); oy=Math.min(0,Math.max(H-ih,oy));
+  el.style.backgroundSize=iw+"px "+ih+"px"; el.style.backgroundPosition=ox+"px "+oy+"px";
+  mk.style.left=(ox+x*iw)+"px"; mk.style.top=(oy+y*ih)+"px";
+}
+window.addEventListener("resize",()=>{ const mn=$("#mini"); if(mn&&route.view==="diga") setMini(mn,diga(route.diga)); });
+
+// MAPPA
+function renderMappa(d,c){
+  let h='<div class="legend"><span><i class="sw" style="border-color:var(--accent)"></i>Caposaldo</span><span><i class="sw" style="border-color:#8a96a3"></i>Da misurare</span><span><i class="sw" style="border-color:var(--ok)"></i>Misurato</span><span><i class="sw" style="border-color:var(--bad)"></i>Da controllare</span></div>'+
+    '<div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="muted">Scorri la mappa con il dito</span><span class="row" style="gap:6px"><button class="btn sm" id="zo" aria-label="Riduci">−</button><button class="btn sm" id="zi" aria-label="Ingrandisci">+</button></span></div>'+
+    '<div class="mapscroll"><div class="map" id="map"><img src="'+d.img+'" alt="Planimetria '+esc(d.nome)+'"></div></div>';
+  main.innerHTML=h;
+  S.mapW=(S.mapW&&typeof S.mapW==="object")?S.mapW:{};
+  const mw=()=>S.mapW[d.id]||d.mapW||900;
+  const map=$("#map"); map.style.width=mw()+"px";
+  const NS="http://www.w3.org/2000/svg"; const svg=document.createElementNS(NS,"svg"); svg.setAttribute("class","leaders"); svg.setAttribute("viewBox","0 0 100 100"); svg.setAttribute("preserveAspectRatio","none"); map.appendChild(svg);
+  allPts(d).forEach(p=>{
+    const sx=stato(d,c,p.id);
+    const ln=document.createElementNS(NS,"line"); [["x1",p.x],["y1",p.y],["x2",p.bx],["y2",p.by]].forEach(a=>ln.setAttribute(a[0],a[1])); ln.setAttribute("class",sx.cls); svg.appendChild(ln);
+    const dot=document.createElement("button"); dot.className="pt "+sx.cls; dot.style.left=p.x+"%"; dot.style.top=p.y+"%"; dot.setAttribute("aria-label","Punto "+p.id);
+    const box=document.createElement("div"); box.className="box "+sx.cls; box.style.left=p.bx+"%"; box.style.top=p.by+"%";
+    const iid="mq-"+p.id.replace(/\W/g,"_");
+    box.innerHTML='<label class="hd" for="'+iid+'">'+esc(p.id)+(p.tipo!=="pt"?' · CS':'')+'</label><input id="'+iid+'" inputmode="decimal" autocomplete="off" placeholder="quota m"><div class="d"></div>';
+    const inp=box.querySelector("input"), dd=box.querySelector(".d");
+    const paint=()=>{ const s2=stato(d,c,p.id); [box,dot].forEach(e=>{ e.classList.remove("filled","alert","cs"); if(s2.cls) e.classList.add(s2.cls); }); ln.setAttribute("class",s2.cls);
+      dd.textContent=p.tipo==="cs"?"quota nota":s2.msg?s2.msg:s2.delta!=null?"Δ zero "+fmtMM(s2.delta)+" mm":(c.misure[p.id]&&c.misure[p.id].ora?"ore "+c.misure[p.id].ora:""); dd.style.color=s2.msg?"var(--bad)":s2.delta!=null?"var(--"+dCls(s2.delta)+")":""; };
+    if(p.tipo==="cs"){ inp.value=fmtQ(d.caposaldo.quota,3); inp.readOnly=true; }
+    else { inp.value=(c.misure[p.id]||{}).q||""; inp.addEventListener("input",()=>{ setQ(c,p.id,inp.value); paint(); }); }
+    dot.addEventListener("click",()=>{ if(!inp.readOnly) inp.focus(); });
+    paint(); map.appendChild(dot); map.appendChild(box);
+  });
+  const z=k=>{ S.mapW[d.id]=Math.max(700,Math.min(3000,mw()+k)); map.style.width=S.mapW[d.id]+"px"; save(); };
+  $("#zi").addEventListener("click",()=>z(200)); $("#zo").addEventListener("click",()=>z(-200));
+}
+
+// FOGLIO
+function renderFoglio(d,c){
+  const e=chiusura(d,c);
+  let h=filtroHTML(d)+'<div class="card" style="padding:4px 8px;overflow-x:auto"><table><thead><tr><th>Punto</th><th>Quota (m)</th><th class="r">Ora</th><th class="r">Δ mm</th></tr></thead><tbody>'+
+    '<tr class="cs"><td><b>'+esc(d.caposaldo.id)+'</b></td><td class="num">'+fmtQ(d.caposaldo.quota,3)+'</td><td></td><td class="r"><span class="pill cs">CS</span></td></tr>';
+  visPts(d).forEach(p=>{ const m=c.misure[p.id]||{}; const iid="fq-"+p.id.replace(/\W/g,"_");
+    h+='<tr data-p="'+esc(p.id)+'"'+(p.tipo==="pp"?' class="pp"':'')+'><td><label for="'+iid+'"><b>'+esc(p.id)+'</b>'+(p.tipo==="pp"?'<div class="muted" style="font-size:11px">passaggio</div>':'')+'</label></td><td><input id="'+iid+'" inputmode="decimal" autocomplete="off" value="'+esc(m.q||"")+'" placeholder="quota"></td><td class="r num c-ora">'+esc(m.ora||"")+'</td><td class="r c-d"></td></tr>'; });
+  const mc=c.misure["__chiusura"]||{};
+  h+='<tr class="cs" data-p="__chiusura"><td><label for="fq-ch"><b>Chiusura '+esc(d.caposaldo.id)+'</b></label></td><td><input id="fq-ch" inputmode="decimal" autocomplete="off" value="'+esc(mc.q||"")+'" placeholder="quota"></td><td class="r num c-ora">'+esc(mc.ora||"")+'</td><td class="r c-d"></td></tr>';
+  h+='</tbody></table></div><div class="grid2" style="margin-top:12px"><button class="btn primary" id="csv">Condividi CSV</button><button class="btn" id="csv2">Salva CSV</button></div>';
+  main.innerHTML=h;
+  main.querySelectorAll("tr[data-p]").forEach(tr=>{
+    const pid=tr.dataset.p, inp=tr.querySelector("input"), cd=tr.querySelector(".c-d"), co=tr.querySelector(".c-ora");
+    const paint=()=>{ co.textContent=(c.misure[pid]||{}).ora||"";
+      if(pid==="__chiusura"){ const e2=chiusura(d,c); cd.innerHTML=e2==null?"—":'<span class="pill '+(Math.abs(e2)<=S.settings.tol?"ok":"bad")+'">'+fmtMM(e2)+'</span>'; return; }
+      const sx=stato(d,c,pid); cd.innerHTML=sx.cls==="alert"?'<span class="pill bad">!</span>':sx.delta!=null?'<span class="pill '+dCls(sx.delta)+'">'+fmtMM(sx.delta)+'</span>':"—"; };
+    inp.addEventListener("input",()=>{ setQ(c,pid,inp.value); paint(); }); paint();
+  });
+  $("#csv").addEventListener("click",()=>shareCSV(d,c)); $("#csv2").addEventListener("click",()=>downloadCSV(d,c));
+  bindFiltro();
+}
+
+// ARCHIVIO
+function renderArchivio(d,c){
+  const z=S.zero[d.id];
+  let h='<div class="stack"><button class="btn primary block" id="nuova">+ Nuova campagna</button><h2 style="margin-top:6px">Campagne</h2>';
+  campOf(d.id).forEach(k=>{
+    const isZ=z&&z.campagnaId===k.id, isC=k.id===c.id;
+    h+='<div class="card stack" style="gap:8px'+(isC?';border-color:var(--accent);border-width:2px':'')+'"><div class="row" style="justify-content:space-between"><b style="font-size:17px">'+fmtDate(k.data)+'</b><span>'+(isZ?'<span class="pill cs">Misura di zero</span> ':'')+(isC?'<span class="pill">Aperta</span>':'')+'</span></div>'+
+      '<div class="muted">'+esc(k.operatore||"Operatore non indicato")+' · '+esc(k.metodo)+' · '+done(d,k)+'/'+d.punti.length+' punti'+(chiusura(d,k)!=null?' · chiusura '+fmtMM(chiusura(d,k))+' mm':'')+'</div>'+
+      '<div class="row" style="flex-wrap:wrap;gap:8px">'+(!isC?'<button class="btn sm" data-a="open" data-id="'+k.id+'">Apri</button>':'')+
+      (!isZ?'<button class="btn sm" data-a="zero" data-id="'+k.id+'">Usa come zero</button>':'<button class="btn sm" data-a="unzero" data-id="'+k.id+'">Togli zero</button>')+
+      '<button class="btn sm danger" data-a="del" data-id="'+k.id+'">Elimina</button></div></div>';
+  });
+  h+='<h2 style="margin-top:6px">Impostazioni</h2><div class="card grid2"><div><label class="lbl" for="s-tol">Tolleranza chiusura (mm)</label><input id="s-tol" class="num" inputmode="decimal" value="'+String(S.settings.tol).replace(".",",")+'"></div>'+
+    '<div><label class="lbl" for="s-sog">Soglia spostamenti (mm)</label><input id="s-sog" class="num" inputmode="decimal" value="'+String(S.settings.soglia).replace(".",",")+'"></div></div>'+
+    '<div class="muted">La misura di zero è la campagna di riferimento: dalle campagne successive ogni punto mostra lo spostamento in mm, verde entro la soglia, arancio fino al doppio, rosso oltre.</div></div>';
+  main.innerHTML=h;
+  $("#nuova").addEventListener("click",()=>ask("Nuova campagna?","Si apre un foglio vuoto con la data di oggi. Le campagne precedenti restano nell'archivio.",()=>{ newCamp(d.id,c); go({view:"diga",diga:d.id,tab:"campo"},true); toast("Nuova campagna aperta"); }));
+  main.querySelectorAll("button[data-a]").forEach(b=>b.addEventListener("click",()=>{
+    const k=S.campagne[b.dataset.id];
+    if(b.dataset.a==="open"){ S.corrente[d.id]=k.id; save(); go({view:"diga",diga:d.id,tab:"campo"},true); }
+    if(b.dataset.a==="zero") ask("Usare il "+fmtDate(k.data)+" come zero?","Le quote di questa campagna diventano il riferimento per calcolare gli spostamenti.",()=>{ const q={}; d.punti.forEach(p=>{ const v=parseQ((k.misure[p.id]||{}).q); if(v!=null&&!isNaN(v)) q[p.id]=v; }); S.zero[d.id]={campagnaId:k.id,data:k.data,quote:q}; save(); render(); toast("Misura di zero impostata"); });
+    if(b.dataset.a==="unzero") ask("Togliere la misura di zero?","Gli spostamenti non verranno calcolati finché non ne imposti un'altra.",()=>{ delete S.zero[d.id]; save(); render(); });
+    if(b.dataset.a==="del") ask("Eliminare la campagna del "+fmtDate(k.data)+"?","Le quote di questa campagna vengono cancellate dal telefono. Se non hai un backup non si possono recuperare.",()=>{ delete S.campagne[k.id]; if(z&&z.campagnaId===k.id) delete S.zero[d.id]; if(S.corrente[d.id]===k.id) delete S.corrente[d.id]; save(); render(); });
+  }));
+  [["s-tol","tol"],["s-sog","soglia"]].forEach(([id,k])=>{ const el=document.getElementById(id); el.addEventListener("change",()=>{ const v=parseQ(el.value); if(v>0){ S.settings[k]=v; save(); } else el.value=String(S.settings[k]).replace(".",","); }); });
+}
+
+// STORICO
+const DAY=86400000;
+function dateMs(s){ const [y,m,dd]=(s||"").split("-").map(Number); return Date.UTC(y||1970,(m||1)-1,dd||1); }
+function campsChrono(dId){ return campOf(dId).slice().sort((a,b)=>(a.data||"").localeCompare(b.data||"")||(a.creata||0)-(b.creata||0)); }
+function qOf(c,pid){ const v=parseQ((c.misure[pid]||{}).q); return v==null||isNaN(v)?null:v; }
+function fmtD2(s){ if(!s) return "—"; const [y,m,d]=s.split("-"); return d+"/"+m+"/"+y.slice(2); }
+// riferimento di un punto: la misura di zero se c'è, altrimenti la prima misura disponibile
+function refOf(d,pid,camps){
+  const z=S.zero[d.id];
+  if(z&&z.quote&&z.quote[pid]!=null) return {q:z.quote[pid],data:z.data,id:z.campagnaId,tipo:"zero"};
+  for(const c of camps){ const q=qOf(c,pid); if(q!=null) return {q,data:c.data,id:c.id,tipo:"prima"}; }
+  return null;
+}
+// serie storica di un punto: una riga per campagna con misura
+function serie(d,pid,camps){
+  const ref=refOf(d,pid,camps); const out=[]; let prev=null;
+  camps.forEach(c=>{
+    const q=qOf(c,pid); if(q==null) return;
+    const m=c.misure[pid]||{};
+    out.push({c,data:c.data,t:dateMs(c.data),q,ora:m.ora||"",note:m.note||"",
+      dr: ref?(q-ref.q)*1000:null,
+      dp: prev?(q-prev.q)*1000:null,
+      giorni: prev?Math.round((dateMs(c.data)-prev.t)/DAY):null});
+    prev={q,t:dateMs(c.data)};
+  });
+  return {ref,pts:out};
+}
+// velocità media (mm/anno) con regressione lineare, se ci sono almeno 3 misure su 30 giorni
+function velocita(pts){
+  const v=pts.filter(p=>p.dr!=null); if(v.length<3) return null;
+  const span=(v[v.length-1].t-v[0].t)/DAY; if(span<30) return null;
+  const xs=v.map(p=>(p.t-v[0].t)/(365.25*DAY)), ys=v.map(p=>p.dr);
+  const mx=xs.reduce((a,b)=>a+b)/xs.length, my=ys.reduce((a,b)=>a+b)/ys.length;
+  let num=0,den=0; xs.forEach((x,i)=>{ num+=(x-mx)*(ys[i]-my); den+=(x-mx)*(x-mx); });
+  return den?num/den:null;
+}
+function pillMM(x,suffix){ return x==null?'<span class="muted">—</span>':'<span class="pill '+dCls(x)+'">'+fmtMM(x)+(suffix||"")+'</span>'; }
+let stoMode="dr", stoPunto=null;
+
+function renderStorico(d,c){
+  const camps=campsChrono(d.id);
+  if(stoPunto) return renderStoricoPunto(d,camps);
+  if(!camps.some(k=>done(d,k)>0)){
+    main.innerHTML='<div class="card stack"><h2 style="margin:0">Storico</h2><div class="muted">Non ci sono ancora misure per questa diga. Lo storico si riempie da solo campagna dopo campagna: qui vedrai spostamenti, grafici e velocità di ogni punto.</div><button class="btn primary" id="gocampo">Vai alla campagna</button></div>';
+    $("#gocampo").addEventListener("click",()=>go({view:"diga",diga:d.id,tab:"campo"},true)); return;
+  }
+  const z=S.zero[d.id], last=camps.filter(k=>done(d,k)>0).slice(-1)[0];
+  const ser={}; d.punti.forEach(p=>ser[p.id]=serie(d,p.id,camps));
+  // ultima misura di ogni punto
+  const VP=visPts(d);
+  const ult=VP.map(p=>{ const s=ser[p.id].pts; return {p,u:s[s.length-1]||null}; });
+  let maxP=null; ult.forEach(o=>{ if(o.u&&o.u.dr!=null&&(maxP==null||Math.abs(o.u.dr)>Math.abs(maxP.u.dr))) maxP=o; });
+  const oltre=ult.filter(o=>o.u&&o.u.dr!=null&&Math.abs(o.u.dr)>S.settings.soglia).length;
+  const nc=camps.filter(k=>done(d,k)>0).length;
+  let h='<div class="stack">';
+  // riepilogo
+  h+='<div class="grid2">'+
+    tile("Campagne",nc,nc?fmtDate(camps.find(k=>done(d,k)>0).data)+" → "+fmtDate(last.data):"")+
+    tile("Riferimento",z?"Zero":"1ª misura",z?"Misura di zero del "+fmtDate(z.data):"Imposta lo zero in Archivio")+
+    tile("Spostamento max",maxP?fmtMM(maxP.u.dr)+" mm":"—",maxP?maxP.p.id+" · ultima misura "+fmtDate(maxP.u.data):"Servono almeno due misure")+
+    tile("Oltre soglia",oltre+" punti","Soglia ±"+String(S.settings.soglia).replace(".",",")+" mm")+
+    '</div>';
+  // grafico a barre: ultima misura di ogni punto rispetto al riferimento
+  const mx=Math.max(S.settings.soglia*2,...ult.map(o=>o.u&&o.u.dr!=null?Math.abs(o.u.dr):0));
+  h+=filtroHTML(d);
+  h+='<div class="card"><h2>Spostamento attuale di ogni punto</h2><div class="muted" style="margin:-4px 0 10px">Ultima misura rispetto al riferimento. A sinistra abbassamento, a destra innalzamento. Tocca un punto per lo storico.</div><div class="bars">';
+  ult.forEach(o=>{
+    const v=o.u&&o.u.dr!=null?o.u.dr:null; const w=v==null?0:Math.abs(v)/mx*50;
+    const s1=S.settings.soglia/mx*50;
+    h+='<button class="barrow" data-p="'+esc(o.p.id)+'"><span class="bn">'+esc(o.p.id)+'</span><span class="btrack"><i class="bs" style="left:'+(50-s1)+'%;width:'+(2*s1)+'%"></i><i class="b0"></i>'+
+      (v==null?'':'<i class="bf '+dCls(v)+'" style="'+(v<0?'right:50%':'left:50%')+';width:'+w+'%"></i>')+'</span><span class="bv">'+(v==null?'—':fmtMM(v))+'</span></button>';
+  });
+  h+='</div><div class="muted" style="font-size:12px;margin-top:6px">Banda chiara = soglia ±'+String(S.settings.soglia).replace(".",",")+' mm · scala fino a ±'+fmtMM(mx).replace("+","")+' mm</div></div>';
+  // tabella storica
+  const cc=camps.filter(k=>done(d,k)>0||chiusura(d,k)!=null);
+  h+='<div class="card"><h2>Tabella storica</h2><div class="seg" role="tablist">'+
+    [["dr","Δ riferimento"],["dp","Δ precedente"],["q","Quote"]].map(([k,l])=>'<button data-m="'+k+'" aria-pressed="'+(stoMode===k)+'">'+l+'</button>').join("")+'</div>'+
+    '<div class="tscroll"><table class="hist"><thead><tr><th class="stick">Punto</th>'+cc.map(k=>'<th class="r">'+fmtD2(k.data)+(z&&z.campagnaId===k.id?'<br><span class="pill cs" style="font-size:10px;padding:1px 6px">zero</span>':'')+'</th>').join("")+'</tr></thead><tbody>';
+  VP.forEach(p=>{
+    const byId={}; ser[p.id].pts.forEach(x=>byId[x.c.id]=x);
+    h+='<tr data-p="'+esc(p.id)+'"><td class="stick"><b>'+esc(p.id)+'</b></td>'+cc.map(k=>{ const x=byId[k.id]; if(!x) return '<td class="r muted">·</td>';
+      if(stoMode==="q") return '<td class="r num">'+fmtQ(x.q)+'</td>';
+      const v=stoMode==="dr"?x.dr:x.dp; return '<td class="r">'+(v==null?'<span class="muted">—</span>':'<span class="cell '+dCls(v)+'">'+fmtMM(v)+'</span>')+'</td>'; }).join("")+'</tr>';
+  });
+  h+='<tr class="cs"><td class="stick"><b>Chiusura</b></td>'+cc.map(k=>{ const e=chiusura(d,k); return '<td class="r">'+(e==null?'<span class="muted">—</span>':'<span class="cell '+(Math.abs(e)<=S.settings.tol?"ok":"bad")+'">'+fmtMM(e)+'</span>')+'</td>'; }).join("")+'</tr>';
+  h+='</tbody></table></div><div class="muted" style="font-size:12px;margin-top:6px">Valori in mm'+(stoMode==="q"?' (quote in m)':'')+'. Scorri di lato per vedere tutte le campagne. Tocca un punto per il dettaglio.</div></div>';
+  // esportazioni
+  h+='<div class="card stack"><h2 style="margin:0">Esporta lo storico</h2><div class="muted">Elenco completo: una riga per ogni misura, con riferimento, spostamenti, note e dati di campagna. Tabella: punti per righe e campagne per colonne, come qui sopra.</div>'+
+    '<div class="grid2"><button class="btn primary" id="ex-long">Storico completo</button><button class="btn" id="ex-wide">Tabella</button></div></div>';
+  h+='</div>';
+  main.innerHTML=h;
+  main.querySelectorAll(".barrow,tr[data-p]").forEach(b=>b.addEventListener("click",()=>{ stoPunto=b.dataset.p; render(); }));
+  bindFiltro();
+  main.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{ stoMode=b.dataset.m; const y=window.scrollY; render(); window.scrollTo(0,y); }));
+  $("#ex-long").addEventListener("click",()=>shareText(d.id.toUpperCase()+"_storico_completo_"+today()+".csv",csvStoricoLungo(d,camps)));
+  $("#ex-wide").addEventListener("click",()=>shareText(d.id.toUpperCase()+"_storico_tabella_"+today()+".csv",csvStoricoTabella(d,camps)));
+}
+function tile(k,v,s){ return '<div class="card tile"><div class="lbl">'+esc(k)+'</div><div class="tv">'+esc(String(v))+'</div><div class="muted" style="font-size:12px">'+esc(s||"")+'</div></div>'; }
+
+function renderStoricoPunto(d,camps){
+  const idx=d.punti.findIndex(p=>p.id===stoPunto); if(idx<0){ stoPunto=null; return render(); }
+  const p=d.punti[idx]; const {ref,pts}=serie(d,p.id,camps); const v=velocita(pts);
+  const vals=pts.filter(x=>x.dr!=null); const last=pts[pts.length-1];
+  let mxAbs=null; vals.forEach(x=>{ if(mxAbs==null||Math.abs(x.dr)>Math.abs(mxAbs.dr)) mxAbs=x; });
+  let h='<div class="stack"><div class="row" style="justify-content:space-between"><button class="btn sm" id="sp-back">‹ Tutti i punti</button><span class="row" style="gap:6px"><button class="btn sm" id="sp-prev" aria-label="Punto precedente"'+(idx===0?" disabled":"")+'>‹</button><button class="btn sm" id="sp-next" aria-label="Punto successivo"'+(idx===d.punti.length-1?" disabled":"")+'>›</button></span></div>'+
+    '<div><div class="stepname">'+esc(p.id)+'</div><div class="steptype">'+(p.tipo==="cs2"?"Caposaldo":"Punto di livellazione")+(p.nota?" · "+esc(p.nota):"")+'</div></div>';
+  if(!pts.length){ h+='<div class="card muted">Nessuna misura per questo punto.</div></div>'; main.innerHTML=h; bindSp(d,idx); return; }
+  h+='<div class="grid2">'+
+    tile("Ultima misura",last.dr!=null?fmtMM(last.dr)+" mm":fmtQ(last.q),fmtDate(last.data)+" · "+fmtQ(last.q)+" m")+
+    tile("Riferimento",fmtQ(ref.q),(ref.tipo==="zero"?"Misura di zero":"Prima misura")+" del "+fmtDate(ref.data))+
+    tile("Massimo",mxAbs?fmtMM(mxAbs.dr)+" mm":"—",mxAbs?"il "+fmtDate(mxAbs.data):"")+
+    tile("Velocità",v==null?"—":((v>0?"+":"")+v.toFixed(2)).replace(".",",")+" mm/anno",v==null?"Servono 3 misure su almeno 30 giorni":"Tendenza su "+vals.length+" misure")+
+    '</div>';
+  h+='<div class="card"><h2>Andamento nel tempo</h2>'+chartSVG(pts)+'<div class="muted" style="font-size:12px;margin-top:4px">Spostamento in mm rispetto al riferimento. Banda verde = soglia ±'+String(S.settings.soglia).replace(".",",")+' mm, banda arancio = doppio della soglia.</div></div>';
+  h+='<div class="card" style="padding:4px 8px;overflow-x:auto"><table><thead><tr><th>Data</th><th class="r">Quota (m)</th><th class="r">Δ rif.</th><th class="r">Δ prec.</th></tr></thead><tbody>'+
+    pts.slice().reverse().map(x=>'<tr><td>'+fmtDate(x.data)+(x.c.id===(S.zero[d.id]||{}).campagnaId?' <span class="pill cs">zero</span>':'')+(x.giorni!=null?'<div class="muted" style="font-size:11px">dopo '+x.giorni+' gg</div>':'')+'</td><td class="r num">'+fmtQ(x.q)+'</td><td class="r">'+pillMM(x.dr)+'</td><td class="r">'+pillMM(x.dp)+'</td></tr>'+
+      (x.note?'<tr><td colspan="4" class="muted" style="font-size:13px;padding-top:0">Nota: '+esc(x.note)+'</td></tr>':'')).join("")+'</tbody></table></div>';
+  h+='<button class="btn" id="sp-ex">Esporta storico di '+esc(p.id)+'</button></div>';
+  main.innerHTML=h; bindSp(d,idx);
+  $("#sp-ex").addEventListener("click",()=>shareText(d.id.toUpperCase()+"_"+p.id.replace(/\W/g,"_")+"_storico.csv",csvStoricoLungo(d,camps,p.id)));
+}
+function bindSp(d,idx){
+  $("#sp-back").addEventListener("click",()=>{ stoPunto=null; render(); });
+  $("#sp-prev").addEventListener("click",()=>{ stoPunto=d.punti[idx-1].id; render(); });
+  $("#sp-next").addEventListener("click",()=>{ stoPunto=d.punti[idx+1].id; render(); });
+}
+function chartSVG(pts){
+  const W=360,H=210,L=40,R=12,T=12,B=30, s=S.settings.soglia;
+  const v=pts.filter(x=>x.dr!=null); if(!v.length) return '<div class="muted">Nessun valore da rappresentare.</div>';
+  let ymax=Math.max(2*s*1.15,...v.map(x=>Math.abs(x.dr)*1.15));
+  const step=[0.5,1,2,5,10,20,50,100].find(k=>ymax/k<=4)||200; ymax=Math.ceil(ymax/step)*step;
+  const t0=v[0].t, t1=v[v.length-1].t, span=Math.max(t1-t0,1);
+  const X=t=>v.length===1?(L+(W-L-R)/2):L+(t-t0)/span*(W-L-R), Y=y=>T+(ymax-y)/(2*ymax)*(H-T-B);
+  let g='<svg viewBox="0 0 '+W+' '+H+'" class="chart" role="img" aria-label="Andamento dello spostamento nel tempo">';
+  g+='<rect x="'+L+'" y="'+Y(2*s)+'" width="'+(W-L-R)+'" height="'+(Y(-2*s)-Y(2*s))+'" fill="var(--warn-soft)"/>';
+  g+='<rect x="'+L+'" y="'+Y(s)+'" width="'+(W-L-R)+'" height="'+(Y(-s)-Y(s))+'" fill="var(--ok-soft)"/>';
+  for(let y=-ymax;y<=ymax+1e-9;y+=step){ g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(y)+'" y2="'+Y(y)+'" stroke="'+(Math.abs(y)<1e-9?"var(--muted)":"var(--line)")+'" stroke-width="'+(Math.abs(y)<1e-9?1.2:0.8)+'"/>'+
+    '<text x="'+(L-5)+'" y="'+(Y(y)+3.5)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+(y>0?"+":"")+String(+y.toFixed(1)).replace(".",",")+'</text>'; }
+  // etichette date: prima, ultima e, se c'è spazio, intermedie
+  const lab=[v[0]]; if(v.length>1) lab.push(v[v.length-1]); if(v.length>3) lab.splice(1,0,v[Math.floor(v.length/2)]);
+  lab.forEach((x,i)=>{ const an=lab.length===1?"middle":i===0?"start":i===lab.length-1?"end":"middle"; g+='<text x="'+X(x.t)+'" y="'+(H-10)+'" text-anchor="'+an+'" font-size="10" fill="var(--muted)">'+fmtD2(x.data)+'</text>'; });
+  if(v.length>1) g+='<polyline fill="none" stroke="var(--accent)" stroke-width="2" points="'+v.map(x=>X(x.t)+","+Y(x.dr)).join(" ")+'"/>';
+  v.forEach((x,i)=>{ const col={ok:"var(--ok)",warn:"var(--warn)",bad:"var(--bad)"}[dCls(x.dr)]; g+='<circle cx="'+X(x.t)+'" cy="'+Y(x.dr)+'" r="'+(i===v.length-1?5:3.5)+'" fill="'+col+'" stroke="#fff" stroke-width="1.5"/>'; });
+  const lx=v[v.length-1]; g+='<text x="'+Math.min(X(lx.t),W-R-2)+'" y="'+(Y(lx.dr)+(lx.dr>=0?-9:16))+'" text-anchor="end" font-size="11" font-weight="700" fill="var(--ink)">'+fmtMM(lx.dr)+' mm</text>';
+  return g+'</svg>';
+}
+function csvRows(rows){ return "﻿"+rows.map(r=>r.map(x=>{ x=String(x==null?"":x); return /[;"\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x; }).join(";")).join("\r\n"); }
+const n5=x=>x==null?"":x.toFixed(5).replace(".",","), n1=x=>x==null?"":(Math.abs(x)<0.05?"0,0":x.toFixed(1).replace(".",","));
+function csvStoricoLungo(d,camps,solo){
+  const rows=[["Diga","Punto","Tipo","Data","Ora","Quota (m)","Riferimento","Data riferimento","Quota riferimento (m)","Delta riferimento (mm)","Delta precedente (mm)","Giorni dalla misura precedente","Note","Operatore","Metodo","Meteo","Livello invaso (m)","Errore chiusura (mm)"]];
+  d.punti.filter(p=>!solo||p.id===solo).forEach(p=>{ const {ref,pts}=serie(d,p.id,camps);
+    pts.forEach(x=>rows.push([d.nome,p.id,p.tipo==="pt"?"punto":"caposaldo",x.data,x.ora,n5(x.q),ref?(ref.tipo==="zero"?"misura di zero":"prima misura"):"",ref?ref.data:"",ref?n5(ref.q):"",n1(x.dr),n1(x.dp),x.giorni==null?"":x.giorni,x.note,x.c.operatore,x.c.metodo,x.c.meteo,(()=>{const v=parseQ(x.c.invaso);return v!=null&&!isNaN(v)?v.toFixed(3).replace(".",","):"";})(),n1(chiusura(d,x.c))])); });
+  return csvRows(rows);
+}
+function csvStoricoTabella(d,camps){
+  const cc=camps.filter(k=>done(d,k)>0||chiusura(d,k)!=null);
+  const rows=[["Punto"].concat(cc.map(k=>k.data+" quota (m)")).concat(cc.map(k=>k.data+" delta rif. (mm)"))];
+  d.punti.forEach(p=>{ const {pts}=serie(d,p.id,camps); const by={}; pts.forEach(x=>by[x.c.id]=x);
+    rows.push([p.id].concat(cc.map(k=>by[k.id]?n5(by[k.id].q):"")).concat(cc.map(k=>by[k.id]?n1(by[k.id].dr):""))); });
+  rows.push(["Errore chiusura (mm)"].concat(cc.map(k=>n1(chiusura(d,k)))).concat(cc.map(()=>"")));
+  return csvRows(rows);
+}
+async function shareText(name,text){
+  const f=new File([text],name,{type:"text/csv"});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:name}); return; }catch(e){ if(e&&e.name==="AbortError") return; } }
+  downloadBlob(new Blob([text],{type:"text/csv"}),name); toast("CSV salvato nei Download");
+}
+
+// ---------------- esportazioni ----------------
+function csvText(d,c){
+  const z=S.zero[d.id]; const rows=[["Diga","Data","Operatore","Strumento","Metodo","Meteo","Punto","Tipo","Quota (m)","Ora","Quota zero (m)","Delta zero (mm)","Note"]];
+  const base=[d.nome,c.data,c.operatore,c.strumento,c.metodo,c.meteo];
+  rows.push(base.concat(["Livello invaso","invaso",(()=>{const v=parseQ(c.invaso);return v!=null&&!isNaN(v)?v.toFixed(3).replace(".",","):"";})(),"","","",""]));
+  rows.push(base.concat([d.caposaldo.id,"caposaldo",d.caposaldo.quota.toFixed(5).replace(".",","),"","","","partenza"]));
+  d.punti.forEach(p=>{ const m=c.misure[p.id]||{}; const q=parseQ(m.q); const zq=z&&z.campagnaId!==c.id&&z.quote?z.quote[p.id]:null;
+    rows.push(base.concat([p.id,p.tipo==="pt"?"punto":"caposaldo",q!=null&&!isNaN(q)?q.toFixed(5).replace(".",","):"",m.ora||"",zq!=null?zq.toFixed(5).replace(".",","):"",(q!=null&&!isNaN(q)&&zq!=null)?((q-zq)*1000).toFixed(1).replace(".",","):"",m.note||""])); });
+  const mc=c.misure["__chiusura"]||{}; const qc=parseQ(mc.q); const e=chiusura(d,c);
+  rows.push(base.concat([d.caposaldo.id+" chiusura","chiusura",qc!=null&&!isNaN(qc)?qc.toFixed(5).replace(".",","):"",mc.ora||"","",e!=null?e.toFixed(1).replace(".",","):"",mc.note||""]));
+  return "﻿"+rows.map(r=>r.map(x=>{ x=String(x==null?"":x); return /[;"\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x; }).join(";")).join("\r\n");
+}
+const csvName=(d,c)=>d.id.toUpperCase()+"_livellazione_"+c.data+".csv";
+function downloadBlob(blob,name){ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000); }
+function downloadCSV(d,c){ downloadBlob(new Blob([csvText(d,c)],{type:"text/csv"}),csvName(d,c)); toast("CSV salvato nei Download"); }
+async function shareCSV(d,c){
+  const f=new File([csvText(d,c)],csvName(d,c),{type:"text/csv"});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:csvName(d,c)}); }catch(e){} }
+  else downloadCSV(d,c);
+}
+function exportBackup(){ saveNow(); downloadBlob(new Blob([JSON.stringify(S,null,1)],{type:"application/json"}),"backup_livellazioni_"+today()+".json"); toast("Backup salvato nei Download"); }
+$("#filein").addEventListener("change",async e=>{
+  const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  try{ const o=JSON.parse(await f.text()); if(!o||!o.campagne) throw 0;
+    ask("Importare il backup?","Le campagne del backup vengono aggiunte a quelle sul telefono; quelle con lo stesso identificativo vengono sostituite.",()=>{ Object.assign(S.campagne,o.campagne); Object.assign(S.zero,o.zero||{}); S.settings=Object.assign(S.settings,o.settings||{}); save(); render(); toast("Backup importato"); });
+  }catch(err){ toast("File non valido: scegli un backup esportato da questa app"); }
+});
+
+// ---------------- dialog / toast ----------------
+let dlgCb=null;
+function ask(t,b,cb){ $("#dlg-t").textContent=t; $("#dlg-b").textContent=b; dlgCb=cb; $("#dlg").showModal(); }
+$("#dlg-no").addEventListener("click",()=>{ $("#dlg").close(); dlgCb=null; });
+$("#dlg-yes").addEventListener("click",()=>{ $("#dlg").close(); const f=dlgCb; dlgCb=null; if(f) f(); });
+let tt=null; function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2800); }
+
+// ---------------- avvio ----------------
+// ---------------- dati cifrati ----------------
+let DATI_VER="";
+function b64d(s){ const b=atob(s), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
+async function decifra(enc,pw){
+  const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]);
+  const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64d(enc.salt),iterations:enc.iter,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["decrypt"]);
+  const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64d(enc.iv)},key,b64d(enc.data));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+async function scaricaEnc(){ const r=await fetch("dati.enc",{cache:"no-store"}); if(!r.ok) throw new Error("http"); return r.json(); }
+function avvia(dati){
+  DIGHE=dati.dighe; DATI_VER=dati.versione||"";
+  route=parseHash(); try{ history.replaceState(route,"",location.hash||"#"); }catch(e){}
+  render();
+}
+function showLock(msg){
+  $("#back").hidden=true; $("#tabbar").hidden=true; $("#campchip").hidden=true;
+  $("#title").textContent="Livellazioni Dighe"; $("#subtitle").textContent="Accesso protetto";
+  main.innerHTML='<div class="stack" style="margin-top:20px"><div class="card stack"><h2 style="margin:0">Inserisci la password</h2>'+
+    '<div class="muted">Planimetrie e capisaldi sono cifrati. Dopo il primo sblocco restano sul telefono e l\'app funziona anche senza segnale.</div>'+
+    (msg?'<div class="info" style="background:var(--warn-soft);color:var(--warn)">'+esc(msg)+'</div>':'')+
+    '<form id="lf" class="stack"><label class="lbl" for="pw" style="margin:0">Password</label><input id="pw" type="password" autocomplete="current-password" required>'+
+    '<button class="btn primary block" id="pwb" type="submit">Sblocca</button></form><div id="pwe" class="muted"></div></div></div>';
+  $("#lf").addEventListener("submit",async e=>{
+    e.preventDefault(); const b=$("#pwb"), er=$("#pwe"); b.disabled=true; b.textContent="Verifica in corso…"; er.textContent="";
+    let enc;
+    try{ enc=await scaricaEnc(); }catch(x){ er.textContent="Non riesco a scaricare i dati: serve il segnale per il primo sblocco."; b.disabled=false; b.textContent="Sblocca"; return; }
+    try{ const dati=await decifra(enc,$("#pw").value); dati.versione=enc.versione; try{ localStorage.setItem(KEYDATI,JSON.stringify(dati)); }catch(x){} avvia(dati); toast("App sbloccata"); }
+    catch(x){ er.textContent="Password errata, riprova."; b.disabled=false; b.textContent="Sblocca"; }
+  });
+  setTimeout(()=>{ const p=$("#pw"); if(p) p.focus(); },100);
+}
+(function boot(){
+  let dati=null; try{ dati=JSON.parse(localStorage.getItem(KEYDATI)); }catch(e){}
+  if(dati&&dati.dighe){ avvia(dati);
+    // se online, controlla se sono stati pubblicati dati nuovi
+    scaricaEnc().then(enc=>{ if(enc.versione&&enc.versione!==dati.versione) showLock("Sono disponibili planimetrie aggiornate: inserisci la password per caricarle."); }).catch(()=>{});
+  } else showLock("");
+})();
+if("serviceWorker" in navigator && (location.protocol==="https:"||location.hostname==="localhost")) navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>

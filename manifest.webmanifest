@@ -1,0 +1,16 @@
+{
+  "name": "Livellazioni Dighe",
+  "short_name": "Livellazioni",
+  "description": "Monografie di campagna per le livellazioni di monitoraggio delle dighe con Leica LS15",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef2f6",
+  "theme_color": "#0b62b8",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
